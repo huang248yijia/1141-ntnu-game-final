@@ -14,46 +14,40 @@ class Game {
     player2 = new Player(600, 100, color(255, 150, 100), LEFT, RIGHT, UP);
     
     // Initialize platforms
-    platforms = new ArrayList<Platform>();
-    
-    switch (stage) {
-      case 1:
-        createPlatforms1();
-        break;
-      case 2:
-        createPlatforms2();
-      default:
-        createPlatforms1();
-        break;
-    }
+    platforms = getStageplatforms(stage - 1);
   }
   
   void createPlatforms1() {
-    // Ground
-    platforms.add(new Platform(0, 550, 800, 50));
-    
-    // Lower platforms
-    platforms.add(new Platform(150, 450, 150, 20));
-    platforms.add(new Platform(500, 450, 150, 20));
-    
-    // Middle platforms
-    platforms.add(new Platform(50, 350, 120, 20));
-    platforms.add(new Platform(300, 300, 200, 20));
-    platforms.add(new Platform(630, 350, 120, 20));
-    
-    // Upper platforms
-    platforms.add(new Platform(150, 200, 100, 20));
-    platforms.add(new Platform(550, 200, 100, 20));
-    
-    // Top platform
-    platforms.add(new Platform(350, 100, 100, 20));
+    // Stage 1: Classic Arena
+    platforms.add(new Platform(0, 500, 960, 40));
+    platforms.add(new Platform(150, 400, 150, 20));
+    platforms.add(new Platform(660, 400, 150, 20));
+    platforms.add(new Platform(50, 300, 120, 20));
+    platforms.add(new Platform(300, 250, 200, 20));
+    platforms.add(new Platform(790, 300, 120, 20));
+    platforms.add(new Platform(150, 150, 100, 20));
+    platforms.add(new Platform(710, 150, 100, 20));
+    platforms.add(new Platform(430, 80, 100, 20));
   }
   void createPlatforms2() {
-    platforms.add(new Platform(0, 260, 360, 30));
-    platforms.add(new Platform(330, 390, 260, 30));
-    platforms.add(new Platform(410, 100, 100, 30));
-    platforms.add(new Platform(560, 260, 400, 30));
-    platforms.add(new Platform(0, 510, 960, 30));
+    // Stage 2: Sky Towers
+    platforms.add(new Platform(0, 500, 200, 40));
+    platforms.add(new Platform(760, 500, 200, 40));
+    platforms.add(new Platform(100, 380, 100, 20));
+    platforms.add(new Platform(760, 380, 100, 20));
+    platforms.add(new Platform(200, 260, 100, 20));
+    platforms.add(new Platform(660, 260, 100, 20));
+    platforms.add(new Platform(300, 140, 100, 20));
+    platforms.add(new Platform(560, 140, 100, 20));
+    platforms.add(new Platform(430, 60, 100, 20));
+  }
+  
+  void createPlatforms3() {
+    // Stage 3: Minimal Stage
+    platforms.add(new Platform(0, 500, 960, 40));
+    platforms.add(new Platform(200, 350, 150, 20));
+    platforms.add(new Platform(610, 350, 150, 20));
+    platforms.add(new Platform(380, 200, 200, 20));
   }
 
 

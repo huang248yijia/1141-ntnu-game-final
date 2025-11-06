@@ -16,6 +16,7 @@ void setup() {
   size(960, 540); // 螢幕大小
   setupTitleScreen(); // 初始化遊戲開始畫面(定義在 GameStart.pde)
   setupCharacterSelection(); // 初始化角色選擇(定義在 CharacterSelection.pde)
+  setupStageSelector(); // 初始化關卡選擇(定義在 StageSelector.pde)
   game = new Game();
   stageEditor = new StageEditor(); // 初始化關卡編輯器
 }
@@ -25,6 +26,8 @@ void draw() {
     drawTitleScreen();
   } else if (uiStat == UI_CHARACTER_SELECTION) {
     drawCharacterSelection(); // 繪製角色選擇畫面(定義在 CharacterSelection.pde)
+  } else if (uiStat == UI_STAGE_SELECTION) {
+    drawStageSelector(); // 繪製關卡選擇畫面(定義在 StageSelector.pde)
   } else if (uiStat == UI_GAME) {
     background(200);
     game.update();
@@ -38,6 +41,8 @@ void draw() {
 void mousePressed() {
   if (uiStat == UI_TITLE_SCREEN) {
     handleTitleScreenClick();
+  } else if (uiStat == UI_STAGE_SELECTION) {
+    stageSelectorMousePressed();
   } else if (uiStat == UI_STAGE_EDITOR) {
     stageEditor.mousePressed();
   }
@@ -58,6 +63,9 @@ void mouseReleased() {
 void keyPressed() {
   if (uiStat == UI_CHARACTER_SELECTION) {
     characterSelectorKeyPressed();
+  }
+  else if (uiStat == UI_STAGE_SELECTION) {
+    stageSelectorKeyPressed();
   }
   else if (uiStat == UI_GAME) {
     game.handleKeyPress(key, keyCode);

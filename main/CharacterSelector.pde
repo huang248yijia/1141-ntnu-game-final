@@ -136,7 +136,7 @@ void characterSelectorKeyPressed() {
     player2Index = (player2Index + 1) % 4;
     addParticles(rightParticles, width - blockXOffset - blockWidth, blockY, blockWidth, blockHeight);
   } else if (key == 'c' || key == 'C') {
-    uiStat = UI_GAME;
+    uiStat = UI_STAGE_SELECTION;
   }
   
 }
