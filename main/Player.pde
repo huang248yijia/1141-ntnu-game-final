@@ -97,15 +97,105 @@ class Player {
   }
   
   void display() {
+    // Draw body
     fill(playerColor);
     stroke(0);
     strokeWeight(2);
     rect(pos.x, pos.y, wh.x, wh.y);
-    // if type == 1, 2, 3, 4?
     
-    fill(255);
-    ellipse(pos.x + wh.x * 0.3, pos.y + wh.y * 0.3, 5, 5);
-    ellipse(pos.x + wh.x * 0.7, pos.y + wh.y * 0.3, 5, 5);
+    // Type 1: Default - Simple character with eyes
+    if (type == 0) {
+      fill(255);
+      ellipse(pos.x + wh.x * 0.3, pos.y + wh.y * 0.3, 5, 5);
+      ellipse(pos.x + wh.x * 0.7, pos.y + wh.y * 0.3, 5, 5);
+    }
+    
+    // Type 2: Ninja - Headband and mask
+    else if (type == 1) {
+      // Headband
+      fill(255, 0, 0);
+      noStroke();
+      rect(pos.x, pos.y + wh.y * 0.15, wh.x, wh.y * 0.15);
+      
+      // Eyes
+      fill(255);
+      ellipse(pos.x + wh.x * 0.3, pos.y + wh.y * 0.35, 6, 6);
+      ellipse(pos.x + wh.x * 0.7, pos.y + wh.y * 0.35, 6, 6);
+      
+      // Mask covering lower face
+      fill(0, 0, 50);
+      noStroke();
+      rect(pos.x + wh.x * 0.1, pos.y + wh.y * 0.5, wh.x * 0.8, wh.y * 0.25);
+      
+      stroke(0);
+      strokeWeight(2);
+    }
+    
+    // Type 3: Knight - Helmet and armor
+    else if (type == 2) {
+      // Helmet visor
+      fill(150, 150, 150);
+      noStroke();
+      rect(pos.x, pos.y, wh.x, wh.y * 0.5);
+      
+      // Visor slit (eyes)
+      fill(50);
+      rect(pos.x + wh.x * 0.15, pos.y + wh.y * 0.25, wh.x * 0.7, wh.y * 0.1);
+      
+      // Armor chest plate
+      fill(200, 200, 200);
+      rect(pos.x + wh.x * 0.1, pos.y + wh.y * 0.55, wh.x * 0.8, wh.y * 0.35);
+      
+      // Chest decoration
+      fill(255, 215, 0);
+      ellipse(pos.x + wh.x * 0.5, pos.y + wh.y * 0.7, wh.x * 0.3, wh.y * 0.2);
+      
+      stroke(0);
+      strokeWeight(2);
+    }
+    
+    // Type 4: Wizard - Hat and robe details
+    else if (type == 3) {
+      // Wizard hat
+      fill(100, 50, 200);
+      noStroke();
+      triangle(pos.x + wh.x * 0.5, pos.y - wh.y * 0.5, 
+               pos.x, pos.y + wh.y * 0.2,
+               pos.x + wh.x, pos.y + wh.y * 0.2);
+      
+      // Hat brim
+      rect(pos.x - wh.x * 0.1, pos.y + wh.y * 0.15, wh.x * 1.2, wh.y * 0.1);
+      
+      // Eyes
+      fill(255);
+      ellipse(pos.x + wh.x * 0.3, pos.y + wh.y * 0.35, 6, 6);
+      ellipse(pos.x + wh.x * 0.7, pos.y + wh.y * 0.35, 6, 6);
+      
+      // Beard
+      fill(200, 200, 200);
+      triangle(pos.x + wh.x * 0.5, pos.y + wh.y * 0.5,
+               pos.x + wh.x * 0.2, pos.y + wh.y * 0.9,
+               pos.x + wh.x * 0.8, pos.y + wh.y * 0.9);
+      
+      // Robe belt
+      fill(255, 215, 0);
+      rect(pos.x + wh.x * 0.1, pos.y + wh.y * 0.6, wh.x * 0.8, wh.y * 0.1);
+      
+      // Stars on robe
+      fill(255, 255, 0);
+      ellipse(pos.x + wh.x * 0.3, pos.y + wh.y * 0.75, 3, 3);
+      ellipse(pos.x + wh.x * 0.7, pos.y + wh.y * 0.8, 3, 3);
+      
+      stroke(0);
+      strokeWeight(2);
+    }
+    
+    // Default fallback (same as type 1)
+    else {
+      fill(255);
+      ellipse(pos.x + wh.x * 0.3, pos.y + wh.y * 0.3, 5, 5);
+      ellipse(pos.x + wh.x * 0.7, pos.y + wh.y * 0.3, 5, 5);
+    }
   }
   
   void handleKeyPress(int k, int kc) {
