@@ -28,6 +28,17 @@ class Player {
   PVector hookDir;            // 發射方向
   float hookSpeed = 20;       // 鎖鏈飛出去的速度
   float maxHookLen = 500;     // 鎖鏈最大長度
+  
+  // 炸彈人變數
+  boolean isBomberChar = false;
+  int jumpCount = 0;          // 跳躍次數（0=在地面，1=單跳，2=雙跳）
+  int lastJumpTime = 0;       // 最後一次跳躍的時間
+  int doubleJumpWindow = 20;  // 雙擊判定時間窗口（約0.33秒）
+  char bombKeyChar;           // 炸彈按鍵
+  boolean tryingToBomb = false;
+  ArrayList<Bomb> bombs;      // 炸彈列表
+  int maxBombs = 3;           // 最多同時存在的炸彈數
+  boolean jumpPressed = false; // 記錄跳躍鍵是否已按下（防止長按）
   // ------------------
 
   
@@ -51,16 +62,97 @@ class Player {
     this.movingRight = false;
     this.jumping = false;
     this.hookKeyChar = hk;
+    this.bombKeyChar = hk;
 
     this.hookPos = new PVector(0,0);
     this.hookDir = new PVector(0,0);
+    this.bombs = new ArrayList<Bomb>();
   }
 
   void setMicMode() {
     this.isMicChar = true;
   }
   
+  void setBomberMode() {
+    this.isBomberChar = true;
+    // 炸彈人移動速度設為70%
+    this.speed = this.baseSpeed * 0.7;
+  }
+  
   void update(ArrayList<Platform> platforms, Player otherPlayer) {
+    // --- 0. 炸彈人功能 ---
+    if (isBomberChar) {
+      // 雙跳邏輯：落地時重置跳躍次數
+      if (onGround && jumpCount > 0) {
+        jumpCount = 0;
+      }
+      
+      // 炸彈釋放邏輯
+      if (tryingToBomb && bombs.size() < maxBombs) {
+        bombs.add(new Bomb(pos.x + wh.x/2, pos.y + wh.y/2));
+        tryingToBomb = false; // 釋放一次後重置
+      }
+      
+      // 更新所有炸彈
+      for (int i = bombs.size() - 1; i >= 0; i--) {
+        Bomb b = bombs.get(i);
+        b.update();
+        
+        // 檢查炸彈是否爆炸並影響玩家
+        if (b.isExploding()) {
+          // 檢查對自己的影響
+          float distToSelf = dist(b.pos.x, b.pos.y, pos.x + wh.x/2, pos.y + wh.y/2);
+          if (distToSelf < b.explosionRadius) {
+            // 計算擊飛方向（水平+垂直）
+            PVector knockbackSelf = new PVector(
+              pos.x + wh.x/2 - b.pos.x,
+              pos.y + wh.y/2 - b.pos.y
+            );
+            knockbackSelf.normalize();
+            
+            // 加強向上的力量，讓角色飛起來
+            if (knockbackSelf.y > 0) {
+              knockbackSelf.y -= 0.5;
+            } else {
+              knockbackSelf.y -= 0.3;
+            }
+            
+            knockbackSelf.normalize();
+            knockbackSelf.mult(30); // 增加擊飛力度
+            vel.add(knockbackSelf);
+          }
+          
+          // 檢查對對手的影響
+          float distToOther = dist(b.pos.x, b.pos.y, otherPlayer.pos.x + otherPlayer.wh.x/2, otherPlayer.pos.y + otherPlayer.wh.y/2);
+          if (distToOther < b.explosionRadius) {
+            // 計算擊飛方向（水平+垂直）
+            PVector knockback = new PVector(
+              otherPlayer.pos.x + otherPlayer.wh.x/2 - b.pos.x,
+              otherPlayer.pos.y + otherPlayer.wh.y/2 - b.pos.y
+            );
+            knockback.normalize();
+            
+            // 加強向上的力量，讓角色飛起來
+            if (knockback.y > 0) {
+              // 對手在炸彈下方：強力向上炸飛
+              knockback.y -= 0.5;
+            } else {
+              // 對手在炸彈上方或同高度：也給予向上的力
+              knockback.y -= 0.3;
+            }
+            
+            knockback.normalize();
+            knockback.mult(30); // 增加擊飛力度
+            otherPlayer.vel.add(knockback);
+          }
+        }
+        
+        // 移除已結束的炸彈
+        if (b.isFinished()) {
+          bombs.remove(i);
+        }
+      }
+    }
     // --- 1. 聲控大小調整 ---
     if (isMicChar) {
       float vol = analyzer.analyze();
@@ -192,8 +284,40 @@ class Player {
       vel.y = 15;
     }
     
-    // Jump
-    if (jumping && onGround) {
+    // Jump - 炸彈人雙跳邏輯
+    if (isBomberChar) {
+      if (jumping && !jumpPressed) {
+        jumpPressed = true;
+        
+        if (onGround) {
+          // 在地面上：檢查是否為雙擊
+          int currentTime = frameCount;
+          if (currentTime - lastJumpTime < doubleJumpWindow && jumpCount == 1) {
+            // 雙擊：大跳（3倍高）
+            vel.y = -jumpForce * 3;
+            jumpCount = 2;
+          } else {
+            // 單擊：小跳（正常高度）
+            vel.y = -jumpForce;
+            jumpCount = 1;
+            lastJumpTime = currentTime;
+          }
+          onGround = false;
+        } else if (jumpCount == 1) {
+          // 在空中且只跳過一次：可以進行空中二段跳
+          int currentTime = frameCount;
+          if (currentTime - lastJumpTime < doubleJumpWindow) {
+            // 快速連按：大跳
+            vel.y = -jumpForce * 3;
+            jumpCount = 2;
+          }
+        }
+      } else if (!jumping) {
+        jumpPressed = false;
+      }
+    }
+    // 一般角色跳躍
+    else if (jumping && onGround) {
       vel.y = -jumpForce;
       onGround = false;
     }
@@ -231,21 +355,20 @@ class Player {
     }
     
     // Keep player in bounds
-    if (pos.x < 0) pos.x = 0;
-    if (pos.x + wh.x > width) pos.x = width - wh.x;
-    if (pos.y + wh.y > height) {
-      pos.y = height - wh.y;
-      vel.y = 0;
-      onGround = true;
-    }
-    // 邊界
     if (pos.x < 0) {
-      pos.x = 0; vel.x = 0;
+      pos.x = 0;
+      vel.x = 0;
     }
     if (pos.x + wh.x > width) {
       pos.x = width - wh.x;
       vel.x = 0;
     }
+    // 防止飛出地圖上方
+    if (pos.y < 0) {
+      pos.y = 0;
+      vel.y = 0;
+    }
+    // 防止掉出地圖下方
     if (pos.y + wh.y > height) {
       pos.y = height - wh.y;
       vel.y = 0;
@@ -266,11 +389,31 @@ class Player {
     strokeWeight(2);
     rect(pos.x, pos.y, wh.x, wh.y);
     
-    // Type 1: Default - Simple character with eyes
+    // Type 1: Bomber - 炸彈人外觀
     if (type == 0) {
+      // 眼睛
       fill(255);
-      ellipse(pos.x + wh.x * 0.3, pos.y + wh.y * 0.3, 5, 5);
-      ellipse(pos.x + wh.x * 0.7, pos.y + wh.y * 0.3, 5, 5);
+      ellipse(pos.x + wh.x * 0.3, pos.y + wh.y * 0.3, 6, 6);
+      ellipse(pos.x + wh.x * 0.7, pos.y + wh.y * 0.3, 6, 6);
+      
+      // 炸彈標誌（在胸前）
+      fill(0);
+      noStroke();
+      ellipse(pos.x + wh.x * 0.5, pos.y + wh.y * 0.65, wh.x * 0.4, wh.x * 0.4);
+      
+      // 導火線
+      stroke(255, 100, 0);
+      strokeWeight(2);
+      line(pos.x + wh.x * 0.5, pos.y + wh.y * 0.45, 
+           pos.x + wh.x * 0.5, pos.y + wh.y * 0.3);
+      
+      // 火花
+      fill(255, 200, 0);
+      noStroke();
+      ellipse(pos.x + wh.x * 0.5, pos.y + wh.y * 0.3, 4, 4);
+      
+      stroke(0);
+      strokeWeight(2);
     }
     
     // Type 2: Ninja - Headband and mask
@@ -369,6 +512,13 @@ class Player {
       noStroke();
       ellipse(hookPos.x, hookPos.y, 8, 8); // 鎖鏈頭
     }
+    
+    // 繪製炸彈
+    if (isBomberChar) {
+      for (Bomb b : bombs) {
+        b.display();
+      }
+    }
   }
   
   void handleKeyPress(int k, int kc) {
@@ -390,6 +540,11 @@ class Player {
     if (isMicChar && (Character.toLowerCase((char)k) == hookKeyChar)) {
       tryingToHook = true;
     }
+    
+    // 檢查是否按下炸彈鍵
+    if (isBomberChar && (Character.toLowerCase((char)k) == bombKeyChar)) {
+      tryingToBomb = true;
+    }
   }
   
   void handleKeyRelease(int k, int kc) {
@@ -409,7 +564,12 @@ class Player {
     // 放開鎖鏈鍵
     if (isMicChar && (Character.toLowerCase((char)k) == hookKeyChar)) {
       tryingToHook = false;
-     }
+    }
+    
+    // 放開炸彈鍵（炸彈人不需要持續按住）
+    if (isBomberChar && (Character.toLowerCase((char)k) == bombKeyChar)) {
+      // 不需要重置 tryingToBomb，因為已經在 update 中處理
+    }
   }
 
   void setInvertedControls() {
@@ -417,5 +577,76 @@ class Player {
     int temp = leftKey;
     leftKey = rightKey;
     rightKey = temp;
+  }
+}
+
+// ==================== 炸彈類別 ====================
+class Bomb {
+  PVector pos;
+  float timer;
+  float fuseTime = 90;  // 引信時間 (1.5秒 @ 60fps)
+  float explosionTime = 20; // 爆炸持續時間
+  float explosionRadius = 100; // 爆炸範圍
+  boolean exploded = false;
+  
+  Bomb(float x, float y) {
+    this.pos = new PVector(x, y);
+    this.timer = 0;
+  }
+  
+  void update() {
+    timer++;
+    if (timer > fuseTime && !exploded) {
+      exploded = true;
+      timer = 0; // 重置計時器用於爆炸動畫
+    }
+  }
+  
+  boolean isExploding() {
+    return exploded && timer < explosionTime;
+  }
+  
+  boolean isFinished() {
+    return exploded && timer >= explosionTime;
+  }
+  
+  void display() {
+    if (!exploded) {
+      // 炸彈本體
+      fill(0);
+      stroke(0);
+      strokeWeight(2);
+      ellipse(pos.x, pos.y, 20, 20);
+      
+      // 閃爍的導火線
+      float blinkAlpha = 128 + sin(timer * 0.3) * 127;
+      fill(255, 100, 0, blinkAlpha);
+      noStroke();
+      ellipse(pos.x, pos.y - 12, 5, 5);
+      
+      // 剩餘時間提示（越接近爆炸越紅）
+      float timeRatio = timer / fuseTime;
+      fill(255 * timeRatio, 255 * (1 - timeRatio), 0);
+      textSize(10);
+      textAlign(CENTER);
+      text(int(fuseTime - timer) / 60 + 1, pos.x, pos.y + 30);
+    } else if (isExploding()) {
+      // 爆炸動畫
+      float explosionScale = timer / explosionTime;
+      float currentRadius = explosionRadius * explosionScale;
+      
+      // 外圈（黃色）
+      noStroke();
+      fill(255, 255, 0, 200 * (1 - explosionScale));
+      ellipse(pos.x, pos.y, currentRadius * 2, currentRadius * 2);
+      
+      // 中圈（橘色）
+      fill(255, 150, 0, 150 * (1 - explosionScale));
+      ellipse(pos.x, pos.y, currentRadius * 1.5, currentRadius * 1.5);
+      
+      // 內圈（紅色）
+      fill(255, 50, 0, 100 * (1 - explosionScale));
+      ellipse(pos.x, pos.y, currentRadius, currentRadius);
+    }
   }
 }
